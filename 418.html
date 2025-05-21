@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>文山區餐飲地圖</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    #map {
+      height: 100vh;
+      width: 100vw;
+      position: relative;
+      z-index: 1;
+    }
+
+    .search-container, .menu-toggle, .menu-content, .bottom-nav {
+      position: absolute;
+      z-index: 2000;
+    }
+
+    .search-container {
+      top: 10px;
+      right: 150px;
+      background: white;
+      padding: 6px 10px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .search-box {
+      padding: 5px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .search-button {
+      padding: 5px 10px;
+      font-size: 14px;
+      background-color: #456cb6;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .menu-toggle {
+      top: 10px;
+      right: 10px;
+      background: white;
+      padding: 8px;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+      cursor: pointer;
+    }
+
+    .menu-toggle div {
+      width: 25px;
+      height: 3px;
+      background-color: #333;
+      margin: 4px 0;
+      border-radius: 2px;
+    }
+
+    .menu-content {
+      top: 50px;
+      right: 10px;
+      background-color: white;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      padding: 8px 10px;
+      display: none;
+    }
+
+    .menu-content a {
+      display: block;
+      padding: 4px 8px;
+      color: #333;
+      text-decoration: none;
+      font-weight: bold;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .menu-content a:hover {
+      background-color: #f0f0f0;
+      border-radius: 4px;
+    }
+
+    .bottom-nav {
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      padding: 8px 16px;
+      display: flex;
+      gap: 20px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    .bottom-nav button {
+      background: none;
+      border: none;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #333;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+
+    .bottom-nav button:hover {
+      background-color: #f0f0f0;
+    }
+
+    .custom-div-icon {
+      position: relative;
+    }
+
+    .custom-div-icon div {
+      width: 18px;
+      height: 18px;
+      background-color: red;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) rotate(-45deg);
+      border: 2px solid white;
+    }
+    .member-popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 20px 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      z-index: 3000;
+      width: 90%;
+      max-width: 400px;
+      display: none;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+      text-align: left;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+
+    .form-group input:focus {
+      border-color: #456cb6;
+      outline: none;
+    }
+
+    .submit-btn {
+      width: 100%;
+      background-color: #456cb6;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .submit-btn:hover {
+      background-color: #36599e;
+    }
+    
+
+    .form-link {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #456cb6;
+      text-align: center;
+    }
+
+    .form-link a {
+      color: #456cb6;
+      text-decoration: none;
+    }
+
+    .form-link a:hover {
+      text-decoration: underline;
+    }
+
+    .toggle-password {
+      display: inline-block;
+      margin-top: 5px;
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: none;
+      border: none;
+      font-size: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #888;
+    }
+
+    
+    .custom-div-icon div {
+        transition: all 0.3s ease;
+    }
+
+    .close-btn:hover {
+      color: #000;
+    }
+
+    /* 店家詳情頁基本樣式 */
+    #storeDetail {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    overflow-y: auto;
+    z-index: 1000;
+    padding: 20px;
+    display: none;
+    }
+
+    .back-button {
+    background: #007bff;
+    color: white;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    }
+
+    .store-image-wrapper img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    object-fit: cover;
+    }
+
+    .store-info {
+    padding: 0 10px;
+      }
+
+    .store-info h2 {
+    margin-top: 0;
+    font-size: 24px;
+    margin-bottom: 10px;
+    }
+
+    .store-info p {
+    margin: 8px 0;
+    font-size: 16px;
+    line-height: 1.5;
+    }
+
+    .hidden {
+    display: none;
+    }
+
+
+  </style>
+</head>
+<body>
+
+  <!--使用條款-->
+  <div id="termsPopup" class="member-popup" style="z-index: 4000;">
+    <h2>使用條款</h2>
+    <p style="max-height: 200px; overflow-y: auto; text-align: left;">
+      歡迎使用本服務，請詳閱以下使用條款內容。註冊即代表您同意遵守相關條款與規定。<br><br>
+      1. 不得從事非法或不當行為。<br>
+      2. 尊重其他使用者，避免發表不當言論。<br>
+      3. 本平台保留隨時修改服務內容的權利。<br>
+      ...（你可以自訂條款內容）...
+    </p>
+    <div style="margin-top: 10px; text-align: left;">
+      <label><input type="checkbox" id="agreeTermsCheckbox" /> 我已閱讀並同意使用條款</label>
+    </div>
+    <button class="submit-btn" onclick="closeTermsPopup()">我同意</button>
+  </div>
+
+  <!--地圖容器-->
+  <div id="map"></div>
+
+
+  <!--搜尋欄-->
+  <div class="search-container">
+    <input type="text" class="search-box" placeholder="搜尋..." />
+    <button class="search-button">搜尋</button>
+  </div>
+
+  <!--漢堡選單-->
+  <div class="menu-toggle" onclick="toggleMenu()">
+    <div></div><div></div><div></div>
+  </div>
+  <div id="menuContent" class="menu-content">
+    <a onclick="filterMarkers('all')"><i class="fa-solid fa-dumpster"></i> 全部</a>
+    <a onclick="filterMarkers('restaurant')"><i class="fa-solid fa-utensils"></i> 餐廳</a>
+    <a onclick="filterMarkers('cafe')"><i class="fa-solid fa-mug-hot"></i> 咖啡廳</a>
+    <a onclick="filterMarkers('night-market')"><i class="fa-solid fa-store"></i> 夜市</a>
+    <a onclick="filterMarkers('bento')"><i class="fa-solid fa-box"></i> 便當類</a>
+    <a onclick="filterMarkers('bread')"><i class="fa-solid fa-bread-slice"></i> 麵包</a>
+    <a onclick="filterMarkers('dessert')"><i class="fa-solid fa-cookie-bite"></i> 糕點</a>
+    <a onclick="filterMarkers('meat')"><i class="fa-solid fa-drumstick-bite"></i> 生鮮肉類</a>
+  </div>
+
+
+  <!--店家資訊框-->
+  <div id="storeInfoBox" style="
+    position: fixed;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 400px;
+    background-color: white;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    display: none;
+    z-index: 1000;">
+
+  <!-- 關閉按鈕 -->
+    <button onclick="closeStoreInfo()" style="
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: none;
+      border: none;
+      font-size: 18px;
+      font-weight: bold;
+      color: #888;
+      cursor: pointer;
+      ">✖</button>
+
+    <h3 id="storeName" style="margin-top: 0;">店名</h3>
+    <button id="detailsBtn" style="
+      position: absolute;
+      top: 35px; /* 比 X 按鈕低一點 */
+      right: 15px;
+      background: none;
+      border: none;
+      font-size: 14px;
+      color: #000000;
+      cursor: pointer;
+      display: none;
+      ">➤ 查看詳情</button>
+    <img id="storeImage" src="" alt="店家圖片" style="width: 100%; border-radius: 10px; margin-top: 10px;">
+  </div>
+
+  <!-- 🔍 詳情內容彈窗 -->
+  <div id="detailPopup" style="
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 500px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    padding: 20px;
+    z-index: 2000;">
+    <button onclick="closeDetailPopup()" style="
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: none;
+      border: none;
+      font-size: 18px;
+      font-weight: bold;
+      color: #888;
+      cursor: pointer;
+    ">✖</button>
+
+    <h2 id="detail-name">店家名稱</h2>
+    <p id="detail-description">這裡是店家的詳細介紹...</p>
+  </div>
+  
+  <div class="bottom-nav">
+    <button onclick="alert('訂單功能開發中')">📦 訂單</button>
+    <button onclick="openMemberPopup('register')">👤 會員</button>
+  </div>
+
+  <!-- 會員註冊與登入彈窗 -->
+  <div id="memberPopup" class="member-popup">
+    <button class="close-btn" onclick="closeMemberPopup()">✖</button>
+    <div id="registerForm">
+      <h2>註冊會員</h2>
+      <form onsubmit="register(event)">
+        <div class="form-group">
+          <label>帳號</label>
+          <input type="text" id="reg-username" required />
+        </div>
+        <div class="form-group">
+          <label>電子郵件</label>
+          <input type="email" id="reg-email" required />
+        </div>
+        <div class="form-group">
+          <label>密碼</label>
+          <input type="password" id="reg-password" required />
+          <span class="toggle-password" onclick="togglePassword('reg-password', this)">顯示密碼</span>
+        </div>
+        <div class="form-group">
+          <label>確認密碼</label>
+          <input type="password" id="reg-confirm-password" required />
+          <span class="toggle-password" onclick="togglePassword('reg-confirm-password', this)">顯示密碼</span>
+        </div>
+        <button class="submit-btn" type="submit">註冊</button>
+        <div class="form-link">
+          已有帳號？<a href="#" onclick="switchToLogin()">登入</a>
+        </div>
+      </form>
+    </div>
+    <div id="loginForm" style="display: none;">
+      <h2>會員登入</h2>
+      <form onsubmit="login(event)">
+        <div class="form-group">
+          <label>帳號</label>
+          <input type="text" id="login-username" required />
+        </div>
+        <div class="form-group">
+          <label>密碼</label>
+          <input type="password" id="login-password" required />
+          <span class="toggle-password" onclick="togglePassword('login-password', this)">顯示密碼</span>
+        </div>
+        <button class="submit-btn" type="submit">登入</button>
+        <div class="form-link">
+          還沒有帳號？<a href="#" onclick="switchToRegister()">註冊</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 詳細資訊區塊（可以預設是 display: none） -->
+    <div id="store-detail" style="display: none;">
+    <h2 id="detail-name"></h2>
+    <img id="detail-image" style="max-width: 100%; height: auto;">
+    <p id="detail-description"></p>
+    <!-- 更多資訊可以加入 -->
+  </div>
+
+  
+  <!-- 這是新的店家詳情頁 -->
+  <div id="storeDetail" class="store-detail hidden">
+    <button id="backButton" class="back-button">← 返回</button>
+  
+    <div class="store-image-wrapper">
+      <img id="storeImage" src="" alt="店家圖片">
+    </div>
+  
+    <div class="store-info">
+      <h2 id="storeName">店名</h2>
+      <p id="storeDescription">店家介紹</p>
+      <p><strong>地址：</strong><span id="storeAddress"></span></p>
+      <p><strong>電話：</strong><span id="storePhone"></span></p>
+      <p><strong>營業時間：</strong><span id="storeHours"></span></p>
+    </div>
+  </div>
+
+
+  <script>
+    const map = L.map("map").setView([24.998275, 121.558802], 13);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap 貢獻者"
+    }).addTo(map);
+
+    const categoryColors = {
+      restaurant: "#e74c3c",
+      cafe: "#e67e22",
+      "night-market": "#9b59b6",
+      bread: "#f39c12",
+      bento: "#2ecc71",
+      meat: "#3498db",
+      dessert: "#34495e"
+    };
+
+    const markersData = [
+      { lat: 24.984669, lng: 121.563164, name: "文山忠順店", category: "restaurant", image:"https://www.chickpt.com.tw/photos/20220530/1931218/1653879530.51171721300094.jpg", description: "老字號牛肉麵，湯頭香醇，人氣超旺！"},
+      { lat: 25.000108, lng: 121.555836, name: "肉匠爺", category: "meat", image:"https://farm66.static.flickr.com/65535/50989157521_cb8a2667ec_c.jpg" },
+      { lat: 24.993, lng: 121.560, name: "幸福咖啡館", category: "cafe", image:"https://obs.line-scdn.net/0hhhXkTj3BN0dlEhzgjaNIEF9QKCkNPDEPUHIYWyMaHXZUInQXWnx7IkkWbHNJKnAZCyN_J0gVLHYYdSUQCyF_/r.800x0"  },
+      { lat: 24.997, lng: 121.556, name: "師大夜市美食", category: "night-market", image:"https://www-ws.gov.taipei/Download.ashx?u=LzAwMS9VcGxvYWQvNDA5L2NrZmlsZS84NzQ2MDNiZC05ZDYxLTRkNDgtOTRjMi1lYTFmOGZkMTQyNGEuanBn&n=MSDpppblnJYuanBn&icon=.jpg" },
+      { lat: 24.985, lng: 121.562, name: "香香便當", category: "bento", image:"https://cdn-tw.orstatic.com/userphoto/photo/0/C1/002DORAA548EAFCF3CAD5Cpx.jpg" },
+      { lat: 24.989, lng: 121.564, name: "小王麵包店", category: "bread", image:"https://cdn-tw.orstatic.com/userphoto/photo/0/C1/002DORAA548EAFCF3CAD5Cpx.jpg" },
+      { lat: 24.995, lng: 121.561, name: "甜心點心屋", category: "dessert", image:"https://upssmile.com/wp-content/uploads/2024/11/20241106-IMG_1775.jpg" },
+      { lat: 24.991, lng: 121.557, name: "文青咖啡館", category: "cafe", image:"https://i1.wp.com/gwan.tw/wp-content/uploads/flickr/14799813789_e0d89b5e71_z.jpg" },
+      { lat: 24.986, lng: 121.559, name: "便當大師", category: "bento", image:"https://www.bizlion.com.tw/bizlionws/Images/Store/2fd32c3b-699c-4964-b7a6-e1950345383a_Img1.JPG" },
+      { lat: 24.994, lng: 121.555, name: "美味糕點舖", category: "dessert", image:"https://weieat.tw/wp-content/uploads/2022/10/IMG_7480.jpg" }
+    ];
+
+    
+    function showDetail(store) {
+        document.getElementById("detail-name").innerText = store.name;
+        document.getElementById("detail-description").innerText = store.description || "尚無詳細說明";
+        document.getElementById("store-detail").style.display = "block";
+        /*name: '這家店的名稱';
+        description: '這家店的介紹';
+        address: '這家店的地址';
+        phone: '這家店的電話';
+        hours: '這家店的營業時間';
+        imageUrl: '這家店的圖片網址';*/
+        document.getElementById('storeName').textContent = storeData.name || '未提供店名';
+        document.getElementById('storeDescription').textContent = storeData.description || '未提供介紹';
+        document.getElementById('storeAddress').textContent = storeData.address || '未提供地址';
+        document.getElementById('storePhone').textContent = storeData.phone || '未提供電話';
+        document.getElementById('storeHours').textContent = storeData.hours || '未提供營業時間';
+        const storeImage = document.getElementById('storeImage');
+        if (storeData.imageUrl) {
+          storeImage.src = storeData.imageUrl;
+          storeImage.alt = storeData.name;
+        }else {
+          storeImage.src = 'https://via.placeholder.com/600x400?text=No+Image'; // 預設圖
+          storeImage.alt = '無圖片';
+        }
+
+        document.getElementById('storeDetail').style.display = 'block';
+        // 返回按鈕功能
+        document.getElementById('backButton').addEventListener('click', function() {
+        document.getElementById('storeDetail').style.display = 'none';
+        });
+}
+
+
+    /*搜尋框功能*/
+    document.querySelector('.search-button').addEventListener('click', () => {
+      const keyword = document.querySelector('.search-box').value.trim();
+        filterMarkersByKeyword(keyword);
+    });
+
+    function filterMarkersByKeyword(keyword) {
+      // 假設你有 markers 陣列
+      leafletMarkers.forEach(marker => {
+      const name = marker.options.storeName || '';
+      if (name.includes(keyword)) {
+        marker.addTo(map);
+      } else {
+        map.removeLayer(marker);
+      }
+      });
+    }
+
+
+    let leafletMarkers = [];
+
+    function createPinIcon(color) {
+      return L.divIcon({
+        className: "custom-div-icon",
+        html: `<div style="background-color:${color};"></div>`,
+        iconSize: [30, 42],
+        iconAnchor: [15, 42],
+        popupAnchor: [0, -35]
+      });
+    }
+
+    function showAllMarkers() {
+      leafletMarkers.forEach(m => map.removeLayer(m));
+      leafletMarkers = [];
+      markersData.forEach(item => {
+        const icon = createPinIcon(categoryColors[item.category] || "#333");
+        const marker = L.marker([item.lat, item.lng], { icon, storeName: item.name }).addTo(map).bindpopup(item.name);
+        marker.on('click', () => showStoreInfo(item));
+        leafletMarkers.push(marker);
+      });
+    }
+
+    function filterMarkers(category) {
+      leafletMarkers.forEach(m => map.removeLayer(m));
+      leafletMarkers = [];
+      markersData.forEach(item => {
+        if (category === 'all' || item.category === category) {
+          const icon = createPinIcon(categoryColors[item.category] || "#333");
+          const marker = L.marker([item.lat, item.lng], { icon, storeName: item.name }).addTo(map);
+          marker.on('click', () => showStoreInfo(item));
+          leafletMarkers.push(marker);
+        }
+      });
+    }
+    function filterMarkersByKeyword(keyword) {
+      // 清空地圖上的 marker
+      leafletMarkers.forEach(m => map.removeLayer(m));
+      leafletMarkers = [];
+
+      const lowerKeyword = keyword.toLowerCase();
+
+      markersData.forEach(item => {
+        if (item.name.toLowerCase().includes(lowerKeyword)) {
+          const icon = createPinIcon(categoryColors[item.category] || "#333");
+          const marker = L.marker([item.lat, item.lng], { icon, storeName: item.name }).addTo(map);
+          marker.on('click', () => showStoreInfo(item));
+          leafletMarkers.push(marker);
+        }
+      });
+      document.querySelector('.search-button').addEventListener('click', () => {
+        const keyword = document.querySelector('.search-box').value.trim();
+        if (!keyword) {
+          showAllMarkers(); // 顯示全部
+        } else {
+          filterMarkersByKeyword(keyword);
+        }
+      });
+    }
+
+    
+
+
+    marker.on("click", () => {
+      showStoreInfo(data);
+      
+    });
+
+
+    function showStoreInfo(data) {
+        document.getElementById("storeName").textContent = data.name;
+        document.getElementById("storeImage").src = data.image || "";
+        document.getElementById("storeImage").style.display = data.image ? "block" : "none";
+        document.getElementById("storeInfoBox").style.display = "block";
+
+        // 顯示查看詳情按鈕，點下去會叫 showDetail
+        const detailsBtn = document.getElementById("detailsBtn");
+        detailsBtn.onclick = () => showDetail(data);
+        detailsBtn.style.display = "inline-block";
+    }
+
+    function closeStoreInfo() {
+      document.getElementById("storeInfoBox").style.display = "none";
+    }
+
+
+    /*-----------------------------------------------------------------------------------*/
+
+    function toggleMenu() {
+      const menu = document.getElementById("menuContent");
+      menu.style.display = menu.style.display === "block" ? "none" : "block";
+    }
+
+    function openMemberPopup(mode) {
+      const popup = document.getElementById("memberPopup");
+      document.getElementById("registerForm").style.display = mode === 'register' ? 'block' : 'none';
+      document.getElementById("loginForm").style.display = mode === 'login' ? 'block' : 'none';
+      popup.style.display = 'block';
+    }
+
+    function closeMemberPopup() {
+      document.getElementById("memberPopup").style.display = 'none';
+    }
+
+    function switchToLogin() {
+      openMemberPopup('login');
+    }
+
+    function switchToRegister() {
+      openMemberPopup('register');
+    }
+    function togglePassword(inputId, toggleSpan) {
+      const input = document.getElementById(inputId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        toggleSpan.textContent = '隱藏密碼';
+      } else {
+        input.type = 'password';
+        toggleSpan.textContent = '顯示密碼';
+      }
+    }
+
+    function register(event) {
+      event.preventDefault();
+
+      const username = document.getElementById("reg-username").value;
+      const email = document.getElementById("reg-email").value;
+      const password = document.getElementById("reg-password").value;
+      const confirmPassword = document.getElementById("reg-confirm-password").value;
+
+      if (password !== confirmPassword) {
+        alert("密碼不一致！");
+        return;
+      }
+
+      // 模擬註冊成功
+      document.getElementById("memberPopup").style.display = "none";
+      openTermsPopup(); // ✅ 顯示條款彈窗
+    }
+
+    function openTermsPopup() {
+      document.getElementById("termsPopup").style.display = "block";
+    }
+
+    function closeTermsPopup() {
+      const checkbox = document.getElementById("agreeTermsCheckbox");
+      if (!checkbox.checked) {
+        alert("請先勾選同意使用條款！");
+        return;
+      }
+      document.getElementById("termsPopup").style.display = "none";
+      alert("感謝您同意使用條款！");
+    }
+
+    function showDetail(store) {
+      document.getElementById("detail-name").innerText = store.name;
+      document.getElementById("detail-description").innerText = store.description || "這間店目前沒有詳細介紹。";
+      document.getElementById("detailPopup").style.display = "block";
+
+    // 可選：關閉 infoBox，讓畫面更乾淨
+      closeStoreInfo();
+    }
+
+    function closeDetailPopup() {
+      document.getElementById("detailPopup").style.display = "none";
+    }
+
+
+    function login(event) {
+      event.preventDefault();
+      const username = document.getElementById("login-username").value;
+      const password = document.getElementById("login-password").value;
+      if (username === "testuser" && password === "123456") {
+        alert("登入成功！");
+        closeMemberPopup();
+      } else {
+        alert("帳號或密碼錯誤，請再試一次！");
+      }
+    }
+    window.onload = showAllMarkers;
+
+  </script>
+</body>
+</html>

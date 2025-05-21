@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loading</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes fadeOut {
+      to {
+        opacity: 0;
+        visibility: hidden;
+      }
+    }
+  </style>
+</head>
+<body class="m-0 p-0 overflow-hidden">
+
+  <!-- Splash Screen -->
+  <div id="splash" class="fixed inset-0 bg-[#9cb5a2] flex flex-col justify-center items-center text-white z-50 transition-opacity duration-1000">
+    <img src="教育部比賽地圖.png" alt="Logo" class="w-45 h-45 mb-6" />
+    <font face="標楷體" size="5">打開地圖，尋找溫飽新可能，讓每一份餐點都有歸屬</font><br>
+    <!--<p class="text-center text-lg font-medium px-4">
+      打開地圖，尋找溫飽新可能，讓每一份餐點都有歸屬
+    </p>-->
+  </div>
+
+  <!-- Main Content -->
+    <div id="main-content" class="hidden w-full h-screen">
+        <iframe id="map-frame" src="" class="w-full h-full border-none"></iframe>
+  </div>
+  
+
+  <script>
+    setTimeout(() => {
+    const splash = document.getElementById("splash");
+    splash.style.opacity = "0";
+    splash.style.visibility = "hidden";
+
+    // 顯示主內容與設定 iframe src
+    const mainContent = document.getElementById("main-content");
+    const iframe = document.getElementById("map-frame");
+
+    iframe.src = "418.html"; // 確保路徑正確
+    mainContent.classList.remove("hidden");
+  }, 2500); // 2.5 秒後淡出
+  </script>
+
+</body>
+</html>
